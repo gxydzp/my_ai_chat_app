@@ -1,0 +1,33 @@
+name: my_ai_chat_app
+description: A retro-future style AI chat app.
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.6
+
+  # 状态管理
+  provider: ^6.0.5
+
+  # 调后端 HTTP 接口
+  http: ^1.6.0
+
+  # 本地持久化聊天记录
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # 预留图片资源（你可以把 UI 里的机器人等图放这里）
+  assets:
+    - assets/images/
+    - assets/promptgrams/

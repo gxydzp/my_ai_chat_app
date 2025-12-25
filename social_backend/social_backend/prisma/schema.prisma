@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ExploreCategory {
+  galaxy
+  station
+  planet
+}
+
+enum PostMediaType {
+  image
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts     Post[]
+  comments  Comment[]
+  likes     Like[]
+
+  @@index([name])
+}
+
+model Post {
+  id           String          @id @default(cuid())
+  title        String
+  content      String
+  category     ExploreCategory
+
+  authorId     String
+  author       User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  media        PostMedia[]
+
+  likeCount    Int             @default(0)
+  commentCount Int             @default(0)
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  comments     Comment[]
+  likes        Like[]
+
+  @@index([category, createdAt(sort: Desc)])
+  @@index([authorId, createdAt(sort: Desc)])
+}
+
+model PostMedia {
+  id        String        @id @default(cuid())
+  postId    String
+  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  type      PostMediaType @default(image)
+  url       String
+  order     Int           @default(0)
+
+  createdAt DateTime      @default(now())
+
+  @@index([postId, order])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Like {
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([postId, userId])
+  @@index([userId, createdAt(sort: Desc)])
+}
