@@ -34,13 +34,13 @@ class ApiService {
   final http.Client _client = LoggingClient(http.Client());
 
   /// ✅ 聊天后端（情绪助手）
-  final String chatBaseUrl = 'http://10.0.2.2:3000';
+  final String chatBaseUrl = 'http://192.3.135.106:3000';
 
   /// ✅ 生图后端（独立工程 chat_image_backend）
-  final String imageBaseUrl = 'http://10.0.2.2:3001';
+  final String imageBaseUrl = 'http://192.3.135.106:3001';
 
   /// ✅ 社交后端（Explore + Prisma）
-  final String socialBaseUrl = 'http://10.0.2.2:3002';
+  final String socialBaseUrl = 'http://192.3.135.106:3002';
 
   /// 开发阶段：先写死一个“当前用户”，后面你可以接 StorageService / 登录
   String viewerId = 'u_test_001';

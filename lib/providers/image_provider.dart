@@ -28,7 +28,7 @@ class ImageStyleOption {
 /// 注意：不要命名成 ImageProvider，会和 Flutter 自带类型重名
 class ImageGenProvider extends ChangeNotifier {
   final String imageBaseUrl;
-  ImageGenProvider({this.imageBaseUrl = 'http://10.0.2.2:3001'});
+  ImageGenProvider({this.imageBaseUrl = 'http://192.3.135.106:3001'});
 
   bool _isLoading = false;
   String? _error;

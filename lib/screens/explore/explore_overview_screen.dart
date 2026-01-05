@@ -3,17 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/post/post_model.dart';
-import '../../models/social/nav_args.dart';
 import '../../providers/explore/feed_provider.dart';
 import '../../widgets/explore/post_card.dart';
+import '../../theme/app_theme.dart';
+
+// 这两个类型现在都在同目录的 screen 里定义
+import 'comment_list_screen.dart';
+import 'user_profile_screen.dart';
 
 class ExploreOverviewScreen extends StatelessWidget {
   const ExploreOverviewScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 如果你暂时不想依赖 ExploreCategory.values，可以固定 3 个 tab
-    final tabs = const [
+    const tabs = [
       Tab(text: '星海'),
       Tab(text: '空间站'),
       Tab(text: '星球'),
@@ -22,15 +25,22 @@ class ExploreOverviewScreen extends StatelessWidget {
     return DefaultTabController(
       length: tabs.length,
       child: Scaffold(
+        // 关键：让 MainShell 的黑底渐变透出来
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
           title: const Text('探索舰段'),
-          bottom: TabBar(tabs: tabs),
+          bottom: TabBar(
+            tabs: tabs,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelColor: AppTheme.textMain,
+            unselectedLabelColor: AppTheme.textSub,
+            indicator: const _BottomGlowTabIndicator(),
+          ),
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () =>
-              Navigator.of(context).pushNamed('/explore/post/create'),
-          child: const Icon(Icons.edit),
-        ),
+        floatingActionButton: const _GlowingFab(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: const TabBarView(
           children: [
             _FeedTab(category: ExploreCategory.galaxy),
@@ -40,6 +50,70 @@ class ExploreOverviewScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Tab 下方的发光横线指示器
+class _BottomGlowTabIndicator extends Decoration {
+  const _BottomGlowTabIndicator();
+
+  @override
+  BoxPainter createBoxPainter([VoidCallback? onChanged]) {
+    return _BottomGlowTabPainter();
+  }
+}
+
+class _BottomGlowTabPainter extends BoxPainter {
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
+    if (configuration.size == null) return;
+
+    final Rect rect = offset & configuration.size!;
+    final Size size = rect.size;
+
+    // 以 tab 宽度中心为基准，在底部画一条横线
+    final double centerX = rect.center.dx;
+
+    // 横线宽度占 tab 宽度的 60%，高度 4 像素
+    final double lineWidth = size.width * 0.6;
+    final double lineHeight = 4.0;
+
+    // 稍微往上提一点，不贴着最底边
+    final double bottom = rect.bottom - 3.0;
+
+    final Rect lineRect = Rect.fromCenter(
+      center: Offset(centerX, bottom),
+      width: lineWidth,
+      height: lineHeight,
+    );
+
+    final RRect rrect = RRect.fromRectAndRadius(
+      lineRect,
+      const Radius.circular(999),
+    );
+
+    // 外部光晕
+    final Paint glowPaint = Paint()
+      ..color = AppTheme.accentColor.withValues(alpha: 0.45)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+
+    // 内部渐变填充
+    final gradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        const Color(0xFFFFFFFF).withValues(alpha: 0.95),
+        const Color(0xFFFFE3FF).withValues(alpha: 0.95),
+      ],
+    );
+
+    final Paint fillPaint = Paint()..shader = gradient.createShader(lineRect);
+
+    canvas.save();
+    // 先画光晕，再画本体
+    canvas.drawRRect(rrect.inflate(4), glowPaint);
+    canvas.drawRRect(rrect, fillPaint);
+    canvas.restore();
   }
 }
 
@@ -88,8 +162,10 @@ class _FeedTabState extends State<_FeedTab> {
       onRefresh: () => feed.refresh(widget.category),
       child: ListView.separated(
         controller: _controller,
+        padding: const EdgeInsets.only(bottom: 96),
         itemCount: posts.length + 1,
-        separatorBuilder: (_, __) => const Divider(height: 0),
+        separatorBuilder: (_, __) =>
+            Divider(height: 0, color: Colors.white.withValues(alpha: 0.05)),
         itemBuilder: (ctx, i) {
           if (i == posts.length) {
             final loading = feed.isLoading(widget.category);
@@ -109,19 +185,47 @@ class _FeedTabState extends State<_FeedTab> {
             onLike: () => context.read<FeedProvider>().toggleLike(post),
             onComment: () => Navigator.of(context).pushNamed(
               '/explore/post/comments',
-              // ✅ 你的 nav_args.dart 里是 CommentListArgs(postId, postTitle?)
-              arguments: CommentListArgs(
-                postId: post.id,
-                postTitle: post.title,
-              ),
+              // 使用 comment_list_screen.dart 里的 CommentListArgs
+              arguments: CommentListArgs(post: post),
             ),
             onOpenAuthor: () => Navigator.of(context).pushNamed(
               '/explore/user',
-              // ✅ 你的 nav_args.dart 里至少有 userId
-              arguments: UserProfileArgs(userId: post.authorId),
+              // 这里先用占位数据，后面接后端再换成真正的作者信息
+              arguments: UserProfileArgs(
+                userId: post.id,
+                userName: '用户',
+              ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// 带光晕的悬浮按钮
+class _GlowingFab extends StatelessWidget {
+  const _GlowingFab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accentColor.withValues(alpha: 0.8),
+            blurRadius: 32,
+            spreadRadius: 4,
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        onPressed: () =>
+            Navigator.of(context).pushNamed('/explore/post/create'),
+        backgroundColor: AppTheme.accentColor,
+        foregroundColor: Colors.black87,
+        child: const Icon(Icons.edit),
       ),
     );
   }
